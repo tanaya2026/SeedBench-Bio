@@ -1,5 +1,5 @@
-| task    | prompt   | TP | FP | FN | Precision | Recall |    F1 | Critical Error Recall | Reasoning Quality |
-| ------- | -------- | -: | -: | -: | --------: | -----: | ----: | --------------------: ||
+| task    | prompt   | TP | FP | FN | Precision | Recall | F1 | Critical Error Recall | Reasoning Quality |
+| ------- | -------- | --- | -- | -- | -------- | ----- | ---- | -------------------- |-----|
 | bulkRNA | baseline |  5 |  0 |  3 |      1.00 |  0.625 | 0.769 | 1                     ||
 | seurat_qc | baseline |  5 |  0 |  0 |      1.00 |  1.00 | 1.00 | 1                     ||
 | ml_disease | baseline |  5 |  0 |  1 |      1.00 |  0.833 | 0.907 | 1                  ||
