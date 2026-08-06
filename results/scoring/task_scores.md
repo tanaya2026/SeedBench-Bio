@@ -10,6 +10,6 @@
 |ml_disease| evidence_based | 3| 0| 3 | 1.00 | 0.5 | 0.666|0.75||
 | seurat_qc | evidence_based | 4| 0 |1 |1.00 | 0.8 |0.88 |1.00 ||
 |bulkRNA| blind | 7| 0 | 1 | 1.00 | 0.875 | 0.933| 0.8 ||
-|ml_disease| blind | 5 | 0| 1 | 1.00 | 0.833 | 0.907 | 1| ||
+|ml_disease| blind | 5 | 0| 1 | 1.00 | 0.833 | 0.907 | 1||
 | seurat_qc | blind | 4| 0 |1 |1.00 | 0.8 |0.88 |1.00 ||
 | claims | blind | 7 | 0 | 0| 1.00 | 1.00 | 1.00 ||1.571|
