@@ -1,0 +1,50 @@
+{
+  "task": "ml_disease_prediction",
+  "task_file": "benchmark_tasks/code_review/ml_disease_prediction.py",
+  "dataset": "Gene expression feature matrix (samples x genes) with binary disease_status labels",
+  "goal": "Train and evaluate a classifier that predicts disease status from expression features, with a trustworthy estimate of generalization performance",
+  "seeded_errors": [
+    {
+      "id": "E1",
+      "category": "data_leakage_scaling",
+      "description": "StandardScaler is fit on the full feature matrix X (fit_transform on all samples) before the train/test split exists. Test-set statistics (mean, variance per gene) leak into the scaling applied to the training data, inflating apparent performance.",
+      "line_hint": "X_scaled = scaler.fit_transform(X)   # fit on the FULL dataset",
+      "severity": "critical"
+    },
+    {
+      "id": "E2",
+      "category": "data_leakage_feature_selection",
+      "description": "Feature selection (SelectKBest) is fit on the full dataset, including the full label vector y, before any train/test split. This lets information about which genes discriminate cases from controls in the test set influence the feature set used for training -- a classic and severe leakage pattern, since the 'test' set was never truly held out from feature selection.",
+      "line_hint": "X_selected = selector.fit_transform(X_scaled, y)   # fit on the FULL dataset",
+      "severity": "critical"
+    },
+    {
+      "id": "E3",
+      "category": "split_reproducibility_and_balance",
+      "description": "train_test_split is called with no random_state (non-reproducible split across runs) and no stratify=y, so class balance between disease and control is not guaranteed to be preserved in either the train or test partition.",
+      "line_hint": "X_train, X_test, y_train, y_test = train_test_split(X_selected, y, test_size=0.25)",
+      "severity": "moderate"
+    },
+    {
+      "id": "E4",
+      "category": "testing_on_training_data",
+      "description": "Model evaluation is performed on X_train/y_train (the same data the model was fit on) rather than the held-out X_test/y_test. X_test and y_test are created by the split but never used anywhere in the script. The reported accuracy reflects memorization/fit quality, not generalization to unseen samples.",
+      "line_hint": "y_pred = clf.predict(X_train)\\nacc = accuracy_score(y_train, y_pred)",
+      "severity": "critical"
+    },
+    {
+      "id": "E5",
+      "category": "wrong_metric",
+      "description": "Only plain accuracy is reported. For a disease/control classification task, which is commonly class-imbalanced, accuracy can look high while the model performs poorly on the minority class. No balanced accuracy, ROC-AUC, precision/recall, or confusion matrix is reported, and class balance is never checked or printed.",
+      "line_hint": "acc = accuracy_score(y_train, y_pred)\\nprint(f\"Model accuracy: {acc:.3f}\")",
+      "severity": "critical"
+    },
+    {
+      "id": "E6",
+      "category": "class_imbalance_unhandled",
+      "description": "LogisticRegression is instantiated without class_weight='balanced' (or any other imbalance-handling strategy), and class distribution is never inspected before modeling, compounding the risk that the wrong metric (E5) is masking poor minority-class performance.",
+      "line_hint": "clf = LogisticRegression(max_iter=1000)",
+      "severity": "moderate"
+    }
+  ]
+}

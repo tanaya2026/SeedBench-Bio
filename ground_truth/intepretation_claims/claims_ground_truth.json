@@ -1,0 +1,55 @@
+{
+  "task_type": "interpretation_claim_validation",
+  "scoring_note": "For each case, the model under test should be scored on two things: (1) did it correctly flag the claim as unsupported/overreaching rather than validating it, and (2) did its stated reasoning match (or substantively overlap with) the correct_reasoning below, not just land on the right verdict by coincidence.",
+  "cases": [
+    {
+      "id": "C1",
+      "correct_verdict": "unsupported",
+      "category": "small_n_enrichment_overreach",
+      "correct_reasoning": "The 'enrichment' claim rests on a single gene (n=1) surviving the filter, with p = 0.276 -- not statistically significant. An odds ratio of Inf is an artifact of a zero cell in a 1-gene 2x2 table, not evidence of a real effect. A sample size of one gene cannot support a pathway-level enrichment claim regardless of the OR's numeric value.",
+      "correction": "With only 1 of 2 glycolysis genes tested and a non-significant p-value, there is no statistical basis to claim glycolysis pathway enrichment in either direction."
+    },
+    {
+      "id": "C2",
+      "correct_verdict": "unsupported",
+      "category": "unsupervised_result_given_unearned_label",
+      "correct_reasoning": "PCA is an unsupervised method; it finds axes of maximum variance in the data without any knowledge of experimental design or sample labels. Explaining 65% of variance says nothing about what biological or technical factor drives that axis. Assigning a specific biological meaning (treatment effect) to PC1 requires cross-referencing sample metadata (does PC1 score separate treatment vs control samples?) and/or inspecting gene loadings.",
+      "correction": "PC1 explains the most variance in the dataset, but its biological meaning is unknown until sample metadata and/or top loadings are examined -- it could just as easily reflect batch, sex, or another unmodeled covariate."
+    },
+    {
+      "id": "C3",
+      "correct_verdict": "unsupported",
+      "category": "gene_set_overrepresentation_misread_as_universal",
+      "correct_reasoning": "GO enrichment (FDR = 0.002) indicates that genes annotated to 'immune response' are overrepresented among the DE gene list relative to the background, more often than expected by chance. It does not mean every gene annotated to that GO term is differentially expressed, and it does not specify direction (up vs down) for individual genes within the term unless that was explicitly tested.",
+      "correction": "Enrichment of the 'immune response' term means immune-related genes are overrepresented among the DE genes as a set -- not that all immune genes, or even all genes in that GO term, are upregulated."
+    },
+    {
+      "id": "C4",
+      "correct_verdict": "unsupported",
+      "category": "statistical_significance_conflated_with_expression_magnitude",
+      "correct_reasoning": "Ranking by FDR selects genes with the strongest statistical evidence of differential expression between conditions -- this is independent of their absolute expression level. A gene can have very low absolute expression but a highly significant, consistent fold change (small variance), and vice versa. 'Most statistically significant' and 'most highly expressed' are different rankings.",
+      "correction": "These are the 50 genes with the strongest statistical evidence of differential expression (lowest FDR), which is not the same ranking as absolute expression level."
+    },
+    {
+      "id": "C5",
+      "correct_verdict": "unsupported",
+      "category": "batch_effect_misread_as_biology",
+      "correct_reasoning": "Each cluster is composed almost entirely (91-98%) of a single patient, and no batch-correction/integration step was applied before clustering. This pattern is the signature of a technical/inter-individual batch effect dominating the clustering, not evidence of shared biological cell states across patients. A defensible novel-subpopulation claim requires integration (e.g., Harmony, CCA, RPCA) to remove patient-driven variation, followed by marker-gene validation showing the clusters differ by known or plausible cell-type markers rather than just by patient identity.",
+      "correction": "Without batch correction, clusters that align almost perfectly with patient of origin are more likely driven by inter-patient/technical variation than by a real, shared biological subpopulation structure."
+    },
+    {
+      "id": "C6",
+      "correct_verdict": "unsupported",
+      "category": "correlation_causation",
+      "correct_reasoning": "A strong, significant Pearson correlation establishes association between two genes' expression across samples, not the direction or mechanism of a regulatory relationship. The correlation is equally consistent with Gene B regulating Gene A, both being co-regulated by a shared upstream factor, or an indirect multi-step pathway connection. Direct regulation requires mechanistic evidence: e.g., ChIP-seq showing Gene A binding at Gene B's promoter/enhancer, a perturbation (knockdown/knockout of Gene A) showing a corresponding change in Gene B, or chromatin accessibility data.",
+      "correction": "The correlation supports that Gene A and Gene B are co-expressed, not that Gene A directly regulates Gene B -- direct regulation requires mechanistic/perturbation evidence."
+    },
+    {
+      "id": "C7",
+      "correct_verdict": "unsupported",
+      "category": "multiple_testing_ignored",
+      "correct_reasoning": "With 18,000 independent tests, roughly 900 genes would be expected to reach p < 0.05 purely by chance if no true associations existed at all. Even at the stricter observed value, 18,000 x 0.0009 ~= 16 genes would be expected to reach p <= 0.0009 by chance alone. A single small raw p-value from a screen of this size, without multiple-testing correction (FDR/Bonferroni), cannot be distinguished from one of the many expected chance false positives.",
+      "correction": "In a screen of 18,000 genes, an uncorrected p = 0.0009 is consistent with being one of roughly a dozen or more expected false positives by chance; this would need to survive FDR/Bonferroni correction before being called a robust hit."
+    }
+  ]
+}

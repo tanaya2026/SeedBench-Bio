@@ -1,0 +1,43 @@
+{
+  "task": "seurat_qc_review",
+  "task_file":"benchmark_tasks/code_review/seurat_qc_review.R",
+  "dataset":" GEO Project GSE118068 (Childhood Cerebellar Tumors Mirror Conserved Fetal Transcriptional Programs scRNA-seq)",
+  "goal":" Perform quality control on this scRNA-seq mouse cerebellar dataset for downstream integration",
+  "seeded_errors": [
+    {
+      "id": "E1",
+      "category": "preprocessing",
+      "description": "Uses normalized expression data ('data' layer) instead of raw counts ('counts' layer) for gene detection filtering. Gene filtering based on detected cells should be performed using unnormalized counts.",
+      "line_hint": "counts <- GetAssayData(seurat_obj, assay = \"RNA\", layer = \"data\")",
+      "severity": "critical"
+    },
+    {
+      "id": "E2",
+      "category": "species_annotation",
+      "description": "Uses the human mitochondrial gene naming pattern (^MT-) for a mouse scRNA-seq dataset. Mouse mitochondrial genes use the lowercase mt- prefix, causing mitochondrial QC metrics to be incorrectly calculated.",
+      "line_hint": "seurat_obj[[\"percent.mt\"]] <- PercentageFeatureSet(seurat_obj, pattern = \"^MT-\")",
+      "severity": "critical"
+    },
+    {
+      "id": "E3",
+      "category": "statistics",
+      "description": "Calculates expected doublets using the number of genes instead of the number of cells. Doublet estimation should scale with the number of captured cells, not the number of detected features.",
+      "line_hint": "nExp.poi <- round(multiplet_rate * nrow(samp))",
+      "severity": "critical"
+    },
+    {
+      "id": "E4",
+      "category": "biological_annotation",
+      "description": "Uses human cell-cycle gene symbols from Seurat's cc.genes.updated.2019 without converting them to mouse gene symbol capitalization, causing CellCycleScoring to fail to match many cell-cycle genes in the mouse dataset.",
+      "line_hint": "s.genes <- cc.genes.updated.2019$s.genes",
+      "severity": "moderate"
+    },
+    {
+      "id": "E5",
+      "category": "workflow_logic",
+      "description": "Attempts to regress out CC.Difference during SCTransform before the CC.Difference metadata variable has been calculated, resulting in an invalid regression variable.",
+      "line_hint": "srat <- SCTransform(srat, vars.to.regress = \"CC.Difference\")",
+      "severity": "critical"
+    }
+  ]
+}

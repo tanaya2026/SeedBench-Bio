@@ -1,0 +1,64 @@
+{
+  "task": "bulkRNAseq_matrix",
+  "task_file": "benchmark_tasks/code_review/bulk_RNAseq_matrix.R",
+  "dataset": "ENA project PRJEB22205 (Drosophila melanogaster, paired-end bulk RNA-seq)",
+  "goal": "Build a gene x sample count matrix suitable for downstream differential expression",
+  "seeded_errors": [
+    {
+      "id": "E1",
+      "category": "reference_mismatch",
+      "description": "STAR genome index and GTF annotation are human (hg38 / GRCh38) rather than Drosophila melanogaster (BDGP6/dm6). The reference species does not match the organism being sequenced, which would cause near-total alignment failure or, worse, spurious low-level mismapping.",
+      "line_hint": "genome_index <- \"/refs/hg38_star_index\"; gtf_file <- \"/refs/Homo_sapiens.GRCh38.gtf\"",
+      "severity": "critical"
+    },
+    {
+      "id": "E2",
+      "category": "missing_qc",
+      "description": "No raw-read QC step (e.g., FastQC) is run before alignment, so adapter contamination, quality tails, GC bias, or overrepresented sequences would go undetected.",
+      "line_hint": "Script proceeds directly from sample_sheet.csv to STAR alignment with no QC step.",
+      "severity": "moderate"
+    },
+    {
+      "id": "E3",
+      "category": "missing_preprocessing",
+      "description": "No adapter/quality trimming (e.g., fastp, Trim Galore) is performed before alignment; raw fastq files are passed directly to STAR.",
+      "line_hint": "STAR --readFilesIn %s %s ... using samples$r1[i], samples$r2[i] directly",
+      "severity": "moderate"
+    },
+    {
+      "id": "E4",
+      "category": "inappropriate_deduplication",
+      "description": "PCR duplicates are removed (picard MarkDuplicates, REMOVE_DUPLICATES=true) before gene-level quantification. For standard bulk RNA-seq differential expression, this is not appropriate practice: highly expressed transcripts naturally produce many duplicate fragments, and removing them systematically biases counts downward for exactly those genes. Deduplication belongs in variant-calling/allele-specific workflows, not standard expression quantification.",
+      "line_hint": "cmd <- sprintf(\"picard MarkDuplicates I=%s O=%s REMOVE_DUPLICATES=true M=metrics.txt\", ...)",
+      "severity": "critical"
+    },
+    {
+      "id": "E5",
+      "category": "strandedness_ignored",
+      "description": "featureCounts is called without setting strandSpecific, despite the sample sheet including a library_strandedness column. Leaving this at the unstranded default when the library is actually stranded silently misassigns or undercounts reads for genes with overlapping antisense transcription.",
+      "line_hint": "featureCounts(files = bam_files, annot.ext = gtf_file, isGTFAnnotationFile = TRUE, isPairedEnd = TRUE, nthreads = 8) -- no strandSpecific argument, library_strandedness column from sample_sheet.csv is never read",
+      "severity": "critical"
+    },
+    {
+      "id": "E6",
+      "category": "missing_pairing_validation",
+      "description": "requireBothEndsMapped is not set in featureCounts for paired-end data, so fragments where only one mate mapped are handled by the tool's default behavior rather than an explicit, reviewed choice.",
+      "line_hint": "featureCounts(... isPairedEnd = TRUE, nthreads = 8) -- no requireBothEndsMapped argument",
+      "severity": "minor"
+    },
+    {
+      "id": "E7",
+      "category": "sample_identity_mismatch_risk",
+      "description": "BAM files are collected with list.files(\"dedup\", ...), which returns files in alphabetical/filesystem order, then column names are assigned directly from samples$tissue by position with no check that this order matches the sample sheet's run_accession order. If the two orderings diverge, count columns get silently mislabeled with the wrong tissue.",
+      "line_hint": "bam_files <- list.files(\"dedup\", pattern = \"_dedup.bam$\", full.names = TRUE) ... colnames(count_matrix) <- samples$tissue",
+      "severity": "critical"
+    },
+    {
+      "id": "E8",
+      "category": "missing_normalization",
+      "description": "Raw featureCounts output is used directly to compare expression across tissues/samples (ordering by rowSums, inspecting top genes) without any library-size normalization (e.g., DESeq2 median-of-ratios or edgeR TMM). Raw counts are not comparable across samples with different sequencing depths.",
+      "line_hint": "head(count_matrix[order(-rowSums(count_matrix)), ], 20) -- performed directly on raw count_matrix with no normalization step",
+      "severity": "critical"
+    }
+  ]
+}
